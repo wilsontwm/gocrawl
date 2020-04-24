@@ -1,27 +1,31 @@
 package news
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/gocolly/colly"
 	"github.com/gocolly/colly/queue"
+	"gocrawl/models"
 	"log"
-	"os"
 	"strings"
 	"time"
 )
 
 var (
 	theEdgeArticleUrls map[string]bool
-	theEdgeArticles    []Article
 )
 
 func init() {
 	// Initialize the article URLs
+	existingLinks := models.GetArticlesBySource(models.TheEdge)
 	theEdgeArticleUrls = map[string]bool{}
+
+	for _, link := range existingLinks {
+		theEdgeArticleUrls[link] = true
+	}
 }
 
 func CrawlTheEdge() {
+	log.Println("Starting to scrape The Edge news")
 	const (
 		datetimeFormat = "January 02, 2006 15:04 pm +08"
 	)
@@ -43,24 +47,26 @@ func CrawlTheEdge() {
 		if strings.Index(link, "/article/") == -1 {
 			return
 		}
+
+		if !strings.HasPrefix(link, "https://www.theedgemarkets.com") {
+			link = "https://www.theedgemarkets.com" + link
+		}
+
 		// start scaping the page under the link found if not scraped before
 		if _, found := theEdgeArticleUrls[link]; !found {
-			if !strings.HasPrefix(link, "https://www.theedgemarkets.com") {
-				link = "https://www.theedgemarkets.com" + link
-			}
 			detailCollector.Visit(link)
 			theEdgeArticleUrls[link] = true
 		}
 	})
 
 	// Before making request
-	c.OnRequest(func(r *colly.Request) {
-		log.Println("Visiting", r.URL.String())
-	})
+	// c.OnRequest(func(r *colly.Request) {
+	// 	log.Println("Visiting", r.URL.String())
+	// })
 
-	detailCollector.OnRequest(func(r *colly.Request) {
-		log.Println("Sub Visiting", r.URL.String())
-	})
+	// detailCollector.OnRequest(func(r *colly.Request) {
+	// 	log.Println("Sub Visiting", r.URL.String())
+	// })
 
 	// Extract details of the course
 	detailCollector.OnHTML("article", func(e *colly.HTMLElement) {
@@ -76,15 +82,16 @@ func CrawlTheEdge() {
 			}
 		}
 
-		article := Article{
+		article := &models.Article{
+			Source:      models.TheEdge,
 			Title:       title,
 			Content:     content,
 			URL:         e.Request.URL.String(),
 			Thumbnail:   thumbnail,
 			PublishedAt: publishedAt,
 		}
-		fmt.Printf("%+v\n", article)
-		theEdgeArticles = append(theEdgeArticles, article)
+
+		models.CreateArticle(article)
 	})
 
 	for pageIndex := 0; pageIndex < 3; pageIndex++ {
@@ -94,12 +101,5 @@ func CrawlTheEdge() {
 
 	// Consume URLs
 	q.Run(c)
-
-}
-
-func OutputTheEdge() {
-
-	enc := json.NewEncoder(os.Stdout)
-	enc.SetIndent("", " ")
-	enc.Encode(theEdgeArticles)
+	log.Println("Ending to scrape The Edge news")
 }

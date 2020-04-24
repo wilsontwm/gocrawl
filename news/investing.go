@@ -12,28 +12,29 @@ import (
 )
 
 var (
-	sinChewArticleUrls map[string]bool
+	investingArticleUrls map[string]bool
+	investingArticles    []Article
 )
 
 func init() {
 	// Initialize the article URLs
-	existingLinks := models.GetArticlesBySource(models.SinChew)
-	sinChewArticleUrls = map[string]bool{}
+	existingLinks := models.GetArticlesBySource(models.Investing)
+	investingArticleUrls = map[string]bool{}
 
 	for _, link := range existingLinks {
-		sinChewArticleUrls[link] = true
+		investingArticleUrls[link] = true
 	}
 }
 
-func CrawlSinChew() {
-	log.Println("Starting to scrape Sin Chew news")
+func CrawlInvesting() {
+	log.Println("Starting to scrape Investing.com news")
 	const (
-		datetimeFormat = "2006-01-02 15:04:05"
+		datetimeFormat = "Jan 02, 2006 03:04PM"
 	)
 
 	// Instantiate the collector
 	c := colly.NewCollector(
-		colly.AllowedDomains("www.sinchew.com.my"),
+		colly.AllowedDomains("www.investing.com"),
 	)
 
 	q, _ := queue.New(
@@ -43,17 +44,18 @@ func CrawlSinChew() {
 
 	detailCollector := c.Clone()
 
-	c.OnHTML("#articlenum", func(e *colly.HTMLElement) {
-		e.ForEach("a[href]", func(_ int, el *colly.HTMLElement) {
-			link := strings.Trim(el.Attr("href"), " ")
-			if strings.Index(link, "/content/") == -1 {
+	c.OnHTML("#leftColumn", func(e *colly.HTMLElement) {
+		e.ForEach(".articleItem", func(_ int, el *colly.HTMLElement) {
+			link := el.ChildAttr("a.title", "href")
+			if strings.Index(link, "/news/") == -1 {
 				return
 			}
 
+			link = "https://www.investing.com" + link
 			// start scaping the page under the link found if not scraped before
-			if _, found := sinChewArticleUrls[link]; !found {
+			if _, found := investingArticleUrls[link]; !found {
 				detailCollector.Visit(link)
-				sinChewArticleUrls[link] = true
+				investingArticleUrls[link] = true
 			}
 		})
 	})
@@ -68,21 +70,22 @@ func CrawlSinChew() {
 	// })
 
 	// Extract details of the course
-	detailCollector.OnHTML("#articlenum", func(e *colly.HTMLElement) {
-		title, _ := e.DOM.ParentsUntil("body").Find("#forsharebutton").Attr("data-a2a-title")
-		content := e.ChildText("p")
-		thumbnail := e.ChildAttr("p img", "src")
+	detailCollector.OnHTML("#leftColumn", func(e *colly.HTMLElement) {
+		title := e.ChildText(".articleHeader")
+		date := e.ChildText(".contentSectionDetails")
+		content := e.ChildText(".articlePage p")
+		thumbnail := e.ChildAttr("#carouselImage", "src")
 		publishedAt := time.Now()
 
-		loc, err := time.LoadLocation("Asia/Kuala_Lumpur")
+		loc, err := time.LoadLocation("America/New_York")
 		if err == nil {
-			if t, err := time.ParseInLocation(datetimeFormat, getDateString(e.Text), loc); err == nil {
+			if t, err := time.ParseInLocation(datetimeFormat, getInvestingDateString(date), loc); err == nil {
 				publishedAt = t
 			}
 		}
 
 		article := &models.Article{
-			Source:      models.SinChew,
+			Source:      models.Investing,
 			Title:       title,
 			Content:     content,
 			URL:         e.Request.URL.String(),
@@ -95,22 +98,16 @@ func CrawlSinChew() {
 
 	for pageIndex := 1; pageIndex <= 3; pageIndex++ {
 		// Add URLs to the queue
-		page := ""
-		if pageIndex > 1 {
-			page = "_" + fmt.Sprintf("%d", pageIndex)
-		}
-
-		url := "https://www.sinchew.com.my/column/node_33" + page + ".html"
-		q.AddURL(url)
+		q.AddURL("https://www.investing.com/news/economy/" + fmt.Sprintf("%d", pageIndex))
 	}
 
 	// Consume URLs
 	q.Run(c)
-	log.Println("Ending to scrape Sin Chew news")
+	log.Println("Ending to scrape Investing.com news")
 }
 
-func getDateString(str string) string {
-	re := regexp.MustCompile(`\d{4}[-]\d{2}[-]\d{2}[\s]\d{2}[:]\d{2}[:]\d{2}`)
+func getInvestingDateString(str string) string {
+	re := regexp.MustCompile(`\w{3}[\s]\d{1,2}[,][\s]\d{4}[\s]\d{2}[:]\d{2}[AP][M]`)
 	result := ""
 	submatchall := re.FindAllString(str, -1)
 	for _, element := range submatchall {

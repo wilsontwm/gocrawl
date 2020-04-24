@@ -1,12 +1,11 @@
 package news
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/gocolly/colly"
 	"github.com/gocolly/colly/queue"
+	"gocrawl/models"
 	"log"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -14,15 +13,20 @@ import (
 
 var (
 	chinaPressArticleUrls map[string]bool
-	chinaPressArticles    []Article
 )
 
 func init() {
 	// Initialize the article URLs
+	existingLinks := models.GetArticlesBySource(models.ChinaPress)
 	chinaPressArticleUrls = map[string]bool{}
+
+	for _, link := range existingLinks {
+		chinaPressArticleUrls[link] = true
+	}
 }
 
 func CrawlChinaPress() {
+	log.Println("Starting to scrape China Press news")
 
 	// Instantiate the collector
 	c := colly.NewCollector(
@@ -47,29 +51,31 @@ func CrawlChinaPress() {
 	})
 
 	// Before making request
-	c.OnRequest(func(r *colly.Request) {
-		log.Println("Visiting", r.URL.String())
-	})
+	// c.OnRequest(func(r *colly.Request) {
+	// 	log.Println("Visiting", r.URL.String())
+	// })
 
-	detailCollector.OnRequest(func(r *colly.Request) {
-		log.Println("Sub Visiting", r.URL.String())
-	})
+	// detailCollector.OnRequest(func(r *colly.Request) {
+	// 	log.Println("Sub Visiting", r.URL.String())
+	// })
 
 	// Extract details of the course
 	detailCollector.OnHTML(".status-publish", func(e *colly.HTMLElement) {
-		title := e.ChildText(".post-content-title h1")
+		title := e.ChildText(".entry-title")
 		datetime := e.ChildText(".entry-date")
 		content := e.ChildText(".entry-content p")
 		thumbnail := e.ChildAttr("p img", "src")
 
-		article := Article{
+		article := &models.Article{
+			Source:      models.ChinaPress,
 			Title:       title,
 			Content:     content,
 			URL:         e.Request.URL.String(),
 			Thumbnail:   thumbnail,
 			PublishedAt: getCPPublishedTime(datetime),
 		}
-		chinaPressArticles = append(chinaPressArticles, article)
+
+		models.CreateArticle(article)
 	})
 
 	for pageIndex := 1; pageIndex <= 1; pageIndex++ {
@@ -80,6 +86,7 @@ func CrawlChinaPress() {
 
 	// Consume URLs
 	q.Run(c)
+	log.Println("Ending to scrape China Press news")
 }
 
 func getCPPublishedTime(datetime string) time.Time {
@@ -92,16 +99,9 @@ func getCPPublishedTime(datetime string) time.Time {
 	month, _ := strconv.Atoi(splitted[0])
 	splitted = strings.Split(splitted[1], "日")
 	day, _ := strconv.Atoi(splitted[0])
-	location, _ := time.LoadLocation("Local")
+	location, _ := time.LoadLocation("Asia/Kuala_Lumpur")
 
 	publishedAt := time.Date(year, time.Month(month), day, hour, min, sec, 0, location)
 
 	return publishedAt
-}
-
-func OutputChinaPress() {
-
-	enc := json.NewEncoder(os.Stdout)
-	enc.SetIndent("", " ")
-	enc.Encode(theEdgeArticles)
 }

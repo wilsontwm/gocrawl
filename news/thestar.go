@@ -1,27 +1,31 @@
 package news
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/gocolly/colly"
 	"github.com/gocolly/colly/queue"
+	"gocrawl/models"
 	"log"
-	"os"
 	"strings"
 	"time"
 )
 
 var (
 	theStarArticleUrls map[string]bool
-	theStarArticles    []Article
 )
 
 func init() {
 	// Initialize the article URLs
+	existingLinks := models.GetArticlesBySource(models.TheStar)
 	theStarArticleUrls = map[string]bool{}
+
+	for _, link := range existingLinks {
+		theStarArticleUrls[link] = true
+	}
 }
 
 func CrawlTheStar() {
+	log.Println("Starting to scrape The Star news")
 	const (
 		datetimeFormat = "Monday, 02 Jan 2006, 3:04 PM MST"
 		dateFormat     = "Monday, 02 Jan 2006"
@@ -52,13 +56,13 @@ func CrawlTheStar() {
 	})
 
 	// Before making request
-	c.OnRequest(func(r *colly.Request) {
-		log.Println("Visiting", r.URL.String())
-	})
+	// c.OnRequest(func(r *colly.Request) {
+	// 	log.Println("Visiting", r.URL.String())
+	// })
 
-	detailCollector.OnRequest(func(r *colly.Request) {
-		log.Println("Sub Visiting", r.URL.String())
-	})
+	// detailCollector.OnRequest(func(r *colly.Request) {
+	// 	log.Println("Sub Visiting", r.URL.String())
+	// })
 
 	// Extract details of the course
 	detailCollector.OnHTML("html", func(e *colly.HTMLElement) {
@@ -74,20 +78,24 @@ func CrawlTheStar() {
 			timestamp = time.Now().Format("3:04 PM MST")
 		}
 
-		datetime := date + ", " + timestamp
-		if t, err := time.Parse(datetimeFormat, datetime); err == nil {
-			publishedAt = t
+		loc, err := time.LoadLocation("Asia/Kuala_Lumpur")
+		if err == nil {
+			datetime := date + ", " + timestamp
+			if t, err := time.ParseInLocation(datetimeFormat, datetime, loc); err == nil {
+				publishedAt = t
+			}
 		}
 
-		article := Article{
+		article := &models.Article{
+			Source:      models.TheStar,
 			Title:       title,
 			Content:     content,
 			URL:         e.Request.URL.String(),
 			Thumbnail:   thumbnail,
 			PublishedAt: publishedAt,
 		}
-		theStarArticles = append(theStarArticles, article)
 
+		models.CreateArticle(article)
 	})
 
 	for pageIndex := 1; pageIndex <= 3; pageIndex++ {
@@ -97,12 +105,5 @@ func CrawlTheStar() {
 
 	// Consume URLs
 	q.Run(c)
-
-}
-
-func OutputTheStar() {
-
-	enc := json.NewEncoder(os.Stdout)
-	enc.SetIndent("", " ")
-	enc.Encode(theStarArticles)
+	log.Println("Ending to scrape The Star news")
 }

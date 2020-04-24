@@ -1,12 +1,11 @@
 package news
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/gocolly/colly"
 	"github.com/gocolly/colly/queue"
+	"gocrawl/models"
 	"log"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -14,15 +13,20 @@ import (
 
 var (
 	nanYangArticleUrls map[string]bool
-	nanYangArticles    []Article
 )
 
 func init() {
 	// Initialize the article URLs
+	existingLinks := models.GetArticlesBySource(models.NanYang)
 	nanYangArticleUrls = map[string]bool{}
+
+	for _, link := range existingLinks {
+		nanYangArticleUrls[link] = true
+	}
 }
 
 func CrawlNanYang() {
+	log.Println("Starting to scrape NanYang news")
 	// Instantiate the collector
 	c := colly.NewCollector(
 		colly.AllowedDomains("www.enanyang.my"),
@@ -48,13 +52,13 @@ func CrawlNanYang() {
 	})
 
 	// Before making request
-	c.OnRequest(func(r *colly.Request) {
-		log.Println("Visiting", r.URL.String())
-	})
+	// c.OnRequest(func(r *colly.Request) {
+	// 	log.Println("Visiting", r.URL.String())
+	// })
 
-	detailCollector.OnRequest(func(r *colly.Request) {
-		log.Println("Sub Visiting", r.URL.String())
-	})
+	// detailCollector.OnRequest(func(r *colly.Request) {
+	// 	log.Println("Sub Visiting", r.URL.String())
+	// })
 
 	// Extract details of the course
 	detailCollector.OnHTML(".article-content", func(e *colly.HTMLElement) {
@@ -64,7 +68,8 @@ func CrawlNanYang() {
 		content := e.ChildText(".entry-content p")
 		thumbnail := e.ChildAttr("p img", "src")
 
-		article := Article{
+		article := &models.Article{
+			Source:      models.NanYang,
 			Title:       title,
 			Content:     content,
 			URL:         e.Request.URL.String(),
@@ -72,7 +77,7 @@ func CrawlNanYang() {
 			PublishedAt: getNYPublishedTime(datetime),
 		}
 
-		nanYangArticles = append(nanYangArticles, article)
+		models.CreateArticle(article)
 	})
 
 	for pageIndex := 1; pageIndex <= 3; pageIndex++ {
@@ -82,7 +87,7 @@ func CrawlNanYang() {
 
 	// Consume URLs
 	q.Run(c)
-
+	log.Println("Ending to scrape NanYang news")
 }
 
 func getNYPublishedTime(datetime string) time.Time {
@@ -95,16 +100,9 @@ func getNYPublishedTime(datetime string) time.Time {
 	month, _ := strconv.Atoi(splitted[0])
 	splitted = strings.Split(splitted[1], "日")
 	day, _ := strconv.Atoi(splitted[0])
-	location, _ := time.LoadLocation("Local")
+	location, _ := time.LoadLocation("Asia/Kuala_Lumpur")
 
 	publishedAt := time.Date(year, time.Month(month), day, hour, min, sec, 0, location)
 
 	return publishedAt
-}
-
-func OutputNanYang() {
-
-	enc := json.NewEncoder(os.Stdout)
-	enc.SetIndent("", " ")
-	enc.Encode(theEdgeArticles)
 }
