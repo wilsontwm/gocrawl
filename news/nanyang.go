@@ -68,6 +68,10 @@ func CrawlNanYang() {
 		content := e.ChildText(".entry-content p")
 		thumbnail := e.ChildAttr("p img", "src")
 
+		if thumbnail != "" && strings.Index(thumbnail, "www.enanyang.my") == -1 {
+			thumbnail = "https://www.enanyang.my" + thumbnail
+		}
+
 		article := &models.Article{
 			Source:      models.NanYang,
 			Title:       title,
