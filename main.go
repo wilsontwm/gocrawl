@@ -6,10 +6,9 @@ import (
 )
 
 func main() {
-	go startCron()
+	// go startCron()
 
-	select {}
-	//getNews()
+	// select {}
 }
 
 // Start the cron jobs to scrape news from news press
@@ -24,6 +23,7 @@ func startCron() {
 	c.AddFunc("7,22,37,52 6-23 * * *", news.CrawlNanYang)
 	c.AddFunc("8,23,38,53 6-23 * * *", news.CrawlChinaPress)
 	c.AddFunc("9,24,39,54 6-23 * * *", news.CrawlSinChew)
+	c.AddFunc("10,25,40,55 6-23 * * *", news.CrawlNewStraitsTimes)
 
 	c.Start()
 }

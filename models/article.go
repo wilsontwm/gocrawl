@@ -6,12 +6,13 @@ import (
 )
 
 const (
-	ChinaPress = 1
-	NanYang    = 2
-	SinChew    = 3
-	TheStar    = 4
-	TheEdge    = 5
-	Investing  = 6
+	ChinaPress      = 1
+	NanYang         = 2
+	SinChew         = 3
+	TheStar         = 4
+	TheEdge         = 5
+	Investing       = 6
+	NewStraitsTimes = 7
 )
 
 type Article struct {
@@ -29,12 +30,13 @@ var NewsSources map[int]string
 
 func init() {
 	NewsSources = map[int]string{
-		ChinaPress: "China Press (中国报)",
-		NanYang:    "Nanyang Siang Pau (南洋商报)",
-		SinChew:    "Sin Chew Daily (星洲日报)",
-		TheStar:    "The Star",
-		TheEdge:    "The Edge",
-		Investing:  "Investing.com",
+		ChinaPress:      "China Press (中国报)",
+		NanYang:         "Nanyang Siang Pau (南洋商报)",
+		SinChew:         "Sin Chew Daily (星洲日报)",
+		TheStar:         "The Star",
+		TheEdge:         "The Edge",
+		Investing:       "Investing.com",
+		NewStraitsTimes: "New Straits Times",
 	}
 }
 
