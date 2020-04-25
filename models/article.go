@@ -13,6 +13,7 @@ const (
 	TheEdge         = 5
 	Investing       = 6
 	NewStraitsTimes = 7
+	MalayMail       = 8
 )
 
 type Article struct {
@@ -37,6 +38,7 @@ func init() {
 		TheEdge:         "The Edge",
 		Investing:       "Investing.com",
 		NewStraitsTimes: "New Straits Times",
+		MalayMail:       "Malay Mail",
 	}
 }
 

@@ -27,9 +27,6 @@ func init() {
 
 func CrawlNewStraitsTimes() {
 	log.Println("Starting to scrape New Straits Times news")
-	const (
-		datetimeFormat = "January 02, 2006 15:04 pm +08"
-	)
 
 	type Content struct {
 		Title     string
