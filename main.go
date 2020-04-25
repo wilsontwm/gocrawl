@@ -16,6 +16,7 @@ func startCron() {
 	c := cron.New()
 	// International press
 	c.AddFunc("0,15,30,45 * * * *", news.CrawlInvesting)
+	c.AddFunc("1,16,31,46 * * * *", news.CrawlBusinessInsider)
 
 	// Local press (scraping at different interval)
 	c.AddFunc("5,20,35,50 6-23 * * *", news.CrawlTheStar)
