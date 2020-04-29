@@ -72,9 +72,15 @@ func CrawlTheEdge() {
 	detailCollector.OnHTML("article", func(e *colly.HTMLElement) {
 		title := e.ChildText(".post-title h1")
 		datetime := e.ChildText(".post-created")
-		content := e.ChildText(".field-item p")
 		thumbnail := e.ChildAttr(".article-getimage center img", "src")
 		publishedAt := time.Now()
+
+		var paragraphs []string
+		e.ForEach(".field-item p", func(_ int, el *colly.HTMLElement) {
+			paragraphs = append(paragraphs, el.Text)
+		})
+		content := strings.Join(paragraphs, "\n\n")
+
 		loc, err := time.LoadLocation("Asia/Kuala_Lumpur")
 		if err == nil {
 			if t, err := time.ParseInLocation(datetimeFormat, datetime, loc); err == nil {

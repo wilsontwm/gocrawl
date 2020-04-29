@@ -70,9 +70,14 @@ func CrawlSinChew() {
 	// Extract details of the course
 	detailCollector.OnHTML("#articlenum", func(e *colly.HTMLElement) {
 		title, _ := e.DOM.ParentsUntil("body").Find("#forsharebutton").Attr("data-a2a-title")
-		content := e.ChildText("p")
 		thumbnail := e.ChildAttr("p img", "src")
 		publishedAt := time.Now()
+
+		var paragraphs []string
+		e.ForEach("p", func(_ int, el *colly.HTMLElement) {
+			paragraphs = append(paragraphs, el.Text)
+		})
+		content := strings.Join(paragraphs, "\n\n")
 
 		loc, err := time.LoadLocation("Asia/Kuala_Lumpur")
 		if err == nil {

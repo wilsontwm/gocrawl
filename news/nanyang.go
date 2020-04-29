@@ -65,8 +65,13 @@ func CrawlNanYang() {
 
 		title := e.ChildText(".post-content-title h1")
 		datetime := e.ChildText(".entry-date")
-		content := e.ChildText(".entry-content p")
 		thumbnail := e.ChildAttr("p img", "src")
+
+		var paragraphs []string
+		e.ForEach(".entry-content p", func(_ int, el *colly.HTMLElement) {
+			paragraphs = append(paragraphs, el.Text)
+		})
+		content := strings.Join(paragraphs, "\n\n")
 
 		if thumbnail != "" && strings.Index(thumbnail, "www.enanyang.my") == -1 {
 			thumbnail = "https://www.enanyang.my" + thumbnail

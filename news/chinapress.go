@@ -63,8 +63,13 @@ func CrawlChinaPress() {
 	detailCollector.OnHTML(".status-publish", func(e *colly.HTMLElement) {
 		title := e.ChildText(".entry-title")
 		datetime := e.ChildText(".entry-date")
-		content := e.ChildText(".entry-content p")
 		thumbnail := e.ChildAttr("p img", "src")
+
+		var paragraphs []string
+		e.ForEach(".entry-content p", func(_ int, el *colly.HTMLElement) {
+			paragraphs = append(paragraphs, el.Text)
+		})
+		content := strings.Join(paragraphs, "\n\n")
 
 		article := &models.Article{
 			Source:      models.ChinaPress,
@@ -78,7 +83,7 @@ func CrawlChinaPress() {
 		models.CreateArticle(article)
 	})
 
-	for pageIndex := 1; pageIndex <= 1; pageIndex++ {
+	for pageIndex := 1; pageIndex <= 3; pageIndex++ {
 		// Add URLs to the queue
 		url := "https://www.chinapress.com.my/category/%e8%b4%a2%e7%bb%8f%e6%96%b0%e9%97%bb/page/" + fmt.Sprintf("%d", pageIndex)
 		q.AddURL(url)

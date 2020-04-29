@@ -69,9 +69,14 @@ func CrawlTheStar() {
 		title := e.ChildAttr("meta[name=content_title]", "content")
 		date := e.ChildText("p.date")
 		timestamp := e.ChildText("time.timestamp")
-		content := strings.ReplaceAll(e.ChildText("div#story-body"), "  ", "\n")
 		thumbnail := e.ChildAttr("meta[name=thumbnailUrl]", "content")
 		publishedAt := time.Now()
+
+		var paragraphs []string
+		e.ForEach("div#story-body p", func(_ int, el *colly.HTMLElement) {
+			paragraphs = append(paragraphs, el.Text)
+		})
+		content := strings.Join(paragraphs, "\n\n")
 
 		// If no timestamp is given, store the current time
 		if len(timestamp) == 0 {
@@ -105,5 +110,6 @@ func CrawlTheStar() {
 
 	// Consume URLs
 	q.Run(c)
+
 	log.Println("Ending to scrape The Star news")
 }

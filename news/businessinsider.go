@@ -52,9 +52,14 @@ func CrawlBusinessInsider() {
 	c.OnHTML(".status-publish", func(e *colly.HTMLElement) {
 		title := e.ChildText(".entry-title")
 		datetime := e.ChildAttr(".entry-date", "datetime")
-		content := e.ChildText("p")
 		thumbnail := e.ChildAttr("img[src]", "src")
 		publishedAt := time.Now()
+
+		var paragraphs []string
+		e.ForEach("p", func(_ int, el *colly.HTMLElement) {
+			paragraphs = append(paragraphs, el.Text)
+		})
+		content := strings.Join(paragraphs, "\n\n")
 
 		if t, err := time.Parse(datetimeFormat, datetime); err == nil {
 			publishedAt = t

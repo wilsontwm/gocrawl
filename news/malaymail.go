@@ -71,11 +71,16 @@ func CrawlMalayMail() {
 	detailCollector.OnHTML(".article", func(e *colly.HTMLElement) {
 		title := e.ChildText("h1")
 		datetime := e.ChildText(".byline .meta")
-		content := e.ChildText("article p")
 		thumbnail := e.ChildAttr("article figure img[src]", "src")
 		publishedAt := time.Now()
-		loc, err := time.LoadLocation("Asia/Kuala_Lumpur")
 
+		var paragraphs []string
+		e.ForEach("article p", func(_ int, el *colly.HTMLElement) {
+			paragraphs = append(paragraphs, el.Text)
+		})
+		content := strings.Join(paragraphs, "\n\n")
+
+		loc, err := time.LoadLocation("Asia/Kuala_Lumpur")
 		if err == nil {
 			if t, err := time.ParseInLocation(datetimeFormat, datetime, loc); err == nil {
 				publishedAt = t

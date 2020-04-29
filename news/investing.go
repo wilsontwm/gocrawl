@@ -73,9 +73,14 @@ func CrawlInvesting() {
 	detailCollector.OnHTML("#leftColumn", func(e *colly.HTMLElement) {
 		title := e.ChildText(".articleHeader")
 		date := e.ChildText(".contentSectionDetails")
-		content := e.ChildText(".articlePage p")
 		thumbnail := e.ChildAttr("#carouselImage", "src")
 		publishedAt := time.Now()
+
+		var paragraphs []string
+		e.ForEach(".articlePage p", func(_ int, el *colly.HTMLElement) {
+			paragraphs = append(paragraphs, el.Text)
+		})
+		content := strings.Join(paragraphs, "\n\n")
 
 		loc, err := time.LoadLocation("America/New_York")
 		if err == nil {
