@@ -27,7 +27,7 @@ func init() {
 func CrawlTheStar() {
 	log.Println("Starting to scrape The Star news")
 	const (
-		datetimeFormat = "Monday, 02 Jan 2006, 3:04 PM MST"
+		datetimeFormat = "Monday, 02 Jan 2006, 3:04 PM MYT"
 		dateFormat     = "Monday, 02 Jan 2006"
 	)
 
@@ -80,7 +80,7 @@ func CrawlTheStar() {
 
 		// If no timestamp is given, store the current time
 		if len(timestamp) == 0 {
-			timestamp = time.Now().Format("3:04 PM MST")
+			timestamp = time.Now().Format("3:04 PM MYT")
 		}
 
 		loc, err := time.LoadLocation("Asia/Kuala_Lumpur")
@@ -110,6 +110,5 @@ func CrawlTheStar() {
 
 	// Consume URLs
 	q.Run(c)
-
 	log.Println("Ending to scrape The Star news")
 }
